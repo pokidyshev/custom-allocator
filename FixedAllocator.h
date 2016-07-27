@@ -12,7 +12,7 @@
 
 class FixedAllocator {
 public:
-    FixedAllocator(size_t blockSize, uint8_t numBlocks);
+    FixedAllocator(size_t blockSize);
     void* Allocate();
     void Deallocate(void* pointer);
 

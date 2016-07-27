@@ -3,6 +3,8 @@
 //
 
 #include <stdexcept>
+#include <climits>
+
 #include "FixedAllocator.h"
 
 void FixedAllocator::Chunk::Init(size_t blockSize, uint8_t blocks)
@@ -97,9 +99,9 @@ void FixedAllocator::Deallocate(void *pointer)
     throw std::invalid_argument("no such pointer");
 }
 
-FixedAllocator::FixedAllocator(size_t blockSize, uint8_t numBlocks)
+FixedAllocator::FixedAllocator(size_t blockSize)
     : blockSize(blockSize),
-      numBlocks(numBlocks),
+      numBlocks(UCHAR_MAX),
       allocChunk(nullptr),
       deallocChunk(chunks.end()) {}
 
