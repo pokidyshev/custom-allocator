@@ -12,18 +12,11 @@
 
 class FixedAllocator {
 public:
+    FixedAllocator(size_t blockSize, uint8_t numBlocks);
     void* Allocate();
-    void Deallocate(void* p);
+    void Deallocate(void* pointer);
 
 private:
-    typedef std::vector<Chunk> Chunks;
-
-    size_t blockSize;
-    uint8_t numBlocks;
-    Chunks chunks;
-    Chunk* allocChunk;
-    Chunk* deallocChunk;
-
     // POD (Plain Old Data)
     struct Chunk {
         void Init(size_t blockSize, uint8_t blocks);
@@ -34,6 +27,16 @@ private:
         uint8_t firstAvailableBlock;
         uint8_t blocksAvailable;
     };
+
+    typedef std::vector<Chunk> Chunks;
+
+    size_t blockSize;
+    uint8_t numBlocks;
+    Chunks chunks;
+    Chunk* allocChunk;
+    Chunks::iterator deallocChunk;
+
+    bool TryDealloc(Chunks::iterator i, uint8_t* toSearch);
 };
 
 #endif //FIXED_ALLOCATOR_H

@@ -2,6 +2,7 @@
 // Created by sandpiturtle on 27.07.16.
 //
 
+#include <stdexcept>
 #include "FixedAllocator.h"
 
 void FixedAllocator::Chunk::Init(size_t blockSize, uint8_t blocks)
@@ -59,7 +60,8 @@ void *FixedAllocator::Allocate()
             Chunk newChunk;
             newChunk.Init(blockSize, numBlocks);
             chunks.push_back(newChunk);
-            allocChunk = deallocChunk = &chunks.back();
+            allocChunk = &chunks.back();
+            deallocChunk = chunks.end() - 1;
         }
     }
     assert(allocChunk != nullptr);
@@ -67,10 +69,47 @@ void *FixedAllocator::Allocate()
     return allocChunk->Allocate(blockSize);
 }
 
-void FixedAllocator::Deallocate(void *p)
+void FixedAllocator::Deallocate(void *pointer)
 {
-    if (p == nullptr)
+    // Nothing to deallocate
+    if (pointer == nullptr)
         return;
+    // Check if memory wasn't allocated
+    assert(deallocChunk != chunks.end());
+    auto toSearch = static_cast<uint8_t*>(pointer);
+    // Try to find pointer in deallocChunk
+    if (TryDealloc(deallocChunk, toSearch))
+        return;
+    // Continue searching in chunks vector
+    Chunks::iterator left, right;
+    left = right = deallocChunk;
+    do {
+        if (--left >= chunks.begin() && TryDealloc(left, toSearch)) {
+            deallocChunk = left;
+            return;
+        }
+        if (++right < chunks.end() && TryDealloc(right, toSearch)) {
+            deallocChunk = right;
+            return;
+        }
+    } while (left >= chunks.begin() || right < chunks.end());
+    // Pointer wasn't found
+    throw std::invalid_argument("no such pointer");
+}
 
+FixedAllocator::FixedAllocator(size_t blockSize, uint8_t numBlocks)
+    : blockSize(blockSize),
+      numBlocks(numBlocks),
+      allocChunk(nullptr),
+      deallocChunk(chunks.end()) {}
 
+bool FixedAllocator::TryDealloc(Chunks::iterator i, uint8_t *toSearch)
+{
+    if (i->pData <= toSearch &&
+        toSearch <= i->pData + blockSize*numBlocks)
+    {
+        i->Deallocate(toSearch, blockSize);
+        return true;
+    }
+    return false;
 }
